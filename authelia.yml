@@ -1,0 +1,24 @@
+services:
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    volumes:
+      - ./docker-conf/authelia/config:/config
+      - ./docker-conf/authelia/secrets:/secrets
+    environment:
+      TZ: "Europe/Amsterdam"
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/jwt
+      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/session
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/storage
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.rule=Host(`auth.askeynet.nl`)"
+      - "traefik.http.routers.authelia.tls.certresolver=letsencrypt"
+      # No authelia middleware here — this IS the auth service
+      - "traefik.http.routers.immich.service=authelia"
+      - "traefik.http.routers.immich.entrypoints=https"
+      - "traefik.http.routers.immich.tls=true"
+      - "traefik.http.services.immich.loadbalancer.server.port=9091"
