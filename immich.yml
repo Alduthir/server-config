@@ -20,11 +20,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.immich.rule=Host(`fotos.${HOST}`)"
       - "traefik.http.routers.immich.service=immich"
-      - "traefik.http.routers.immich.entrypoints=https"
-      - "traefik.http.routers.immich.tls=true"
       - "traefik.http.routers.immich.tls.certresolver=letsencrypt"
       - "traefik.http.services.immich.loadbalancer.server.port=2283"
-      - "traefik.http.routers.immich.middlewares=authelia@file"
+#      - "traefik.http.routers.immich.middlewares=authelia@file"
 
   immich-machine-learning:
     container_name: immich_machine_learning

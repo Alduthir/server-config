@@ -1,5 +1,4 @@
-################################################################
-# Global configuration
+## Global configuration
 ################################################################
 global:
   checkNewVersion: true
@@ -25,18 +24,6 @@ entryPoints:
   https:
     address: ":443"
 
-http:
-  middlewares:
-    forward-auth:
-      forwardAuth:
-        address: "http://authelia:9091/api/verify?rd=https://askeynet.nl:9091/""
-        trustForwardHeader: true
-        authResponseHeaders:
-          - "Remote-User"
-          - "Remote-Groups"
-          - "Remote-Email"
-          - "Remote-Name"
-
 ################################################################
 # LetsEncrypt configuration
 ################################################################
@@ -55,9 +42,7 @@ certificatesResolvers:
 ################################################################
 # Docker configuration backend
 ################################################################
-providers:
-  docker:
-    network: proxy
+# DO NOT set providers in the traefik.yml, instead use the commands in the docker compose
 
 ################################################################
 # Traefik logs configuration

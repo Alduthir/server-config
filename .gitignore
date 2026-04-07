@@ -8,4 +8,4 @@ transcode_cache/
 config/
 cache/
 log/
-secrets/
+2fa/secrets/
