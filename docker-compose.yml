@@ -2,35 +2,71 @@ services:
   # Auto update and reverse proxy
   traefik:
     container_name: traefik
-    image: traefik:latest
+    image: traefik:v3.6
     restart: always
-    command:
-      - "--log.level=DEBUG"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http"
-      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
     ports:
       - 80:80
       - 443:443
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
-      - ./docker-conf/traefik.yml:/etc/traefik/traefik.yml
 #    environment:
 #      - MIJNHOST_API_KEY=${MIJNHOST_API_KEY}
+    command:
+      # EntryPoints
+      ## Http
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      ## Https
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
+
+
+      # Encrypion
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+
+      # Providers
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=proxy"
+
+      # API & Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+
+      # Observability
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--metrics.prometheus=true"
+
+
+
     labels:
+      # Enable self-routing
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`${HOST}`)"
-      - "traefik.http.routers.traefik-dashboard.service=traefik-dashboard"
-      - "traefik.http.services.traefik-dashboard.loadbalancer.server.port=8080"
-      - "traefik.http.routers.traefik.entrypoints=traefik"
-      - "traefik.http.routers.traefik.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASSWORD}"
-      - "traefik.http.routers.traefik-dashboard.entrypoints=https"
+
+      # Dashboard router
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`dashboard.${HOST}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+
+      # Basic-auth middleware
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASSWORD}"
       - "traefik.http.routers.traefik-dashboard.middlewares=auth"
+
+networks:
+  proxy:
+    name: proxy
+    external: true
