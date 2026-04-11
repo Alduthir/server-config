@@ -1,0 +1,26 @@
+services:
+  trilium:
+    image: triliumnext/trilium:v0.102.2
+    networks:
+      - proxy
+    restart: unless-stopped
+    volumes:
+      - ${TRILIUM_DATA_DIR}:/home/node/trilium-data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trilium.rule=Host(`notes.${HOST}`)"
+      - "traefik.http.routers.trilium.service=trilium"
+      - "traefik.http.routers.trilium.entrypoints=websecure"
+      - "traefik.http.routers.trilium.tls=true"
+      - "traefik.http.routers.trilium.tls.certresolver=letsencrypt"
+      - "traefik.http.services.trilium.loadbalancer.server.port=8080"
+      - "traefik.http.routers.trilium.middlewares=trilium-headers@docker"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.middlewares.trilium-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+
+networks:
+  proxy:
+    name: proxy
+    external: true
