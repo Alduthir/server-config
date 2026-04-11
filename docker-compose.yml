@@ -3,9 +3,9 @@ services:
   traefik:
     container_name: traefik
     image: traefik:v3.6
-    restart: always
-    security_opt:
-      - no-new-privileges:true
+    restart: unless-stopped
+#    security_opt:
+#      - no-new-privileges:true
     networks:
       - proxy
     ports:
@@ -22,18 +22,16 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       ## Https
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.websecure.http.tls=true"
 
-
       # Encrypion
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+#      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.storage=letsencrypt/acme.json"
 
       # Providers
       - "--providers.docker=true"
@@ -45,7 +43,7 @@ services:
       - "--api.insecure=false"
 
       # Observability
-      - "--log.level=INFO"
+      - "--log.level=DEBUG"
       - "--accesslog=true"
       - "--metrics.prometheus=true"
 
@@ -61,6 +59,7 @@ services:
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.services.traefik-dashboard.loadbalancer.server.port=8080"
 
       # Basic-auth middleware
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASSWORD}"
